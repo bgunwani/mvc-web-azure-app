@@ -1,99 +1,40 @@
-name: ASP.NET Core CI/CD
- 
+name: Deploy ASP.NET Core MVC 8 to Azure
+
 on:
-
   push:
-
     branches:
+      - master  # Change to your deployment branch
+  workflow_dispatch:
 
-      - master  # Runs pipeline when code is pushed to main branch
-
-  pull_request:
-
-    branches:
-
-      - master
- 
 jobs:
-
-  build:
-
+  build-and-deploy:
     runs-on: ubuntu-latest
- 
+
     steps:
-
-    - name: Checkout repository
-
+    - name: Checkout Code
       uses: actions/checkout@v3
- 
-    - name: Setup .NET Core
 
+    - name: Setup .NET
       uses: actions/setup-dotnet@v3
-
       with:
+        dotnet-version: '8.0.x'
 
-        dotnet-version: '8.0.x'  # Use .NET 8
- 
-    - name: Restore dependencies
-
+    - name: Restore Dependencies
       run: dotnet restore
- 
-    - name: Build the project
 
+    - name: Build Project
       run: dotnet build --configuration Release --no-restore
- 
-    - name: Run Tests
 
-      run: dotnet test --no-restore --verbosity normal
- 
-    - name: Publish the project
+    - name: Publish Project
+      run: dotnet publish -c Release -o myapp
 
-      run: dotnet publish -c Release -o published
- 
-    - name: Upload artifact for deployment
-
-      uses: actions/upload-artifact@v3
-
+    - name: Login to Azure
+      uses: azure/login@v1
       with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-        name: published-app
-
-        path: published
- 
-  deploy:
-
-    runs-on: ubuntu-latest
-
-    needs: build
-
-    steps:
-
-    - name: Checkout repository
-
-      uses: actions/checkout@v3
- 
-    - name: Download artifact
-
-      uses: actions/download-artifact@v3
-
-      with:
-
-        name: published-app
-
-        path: published
- 
-    - name: Deploy to Azure App Service
-
+    - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v3
-
       with:
-
-        app-name: "YourAppServiceName"
-
-        slot-name: "production"
-
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-
-        package: "published"
-
- 
+        app-name: "mvc-web-azure-app-bg"  # Replace with your Azure App Service name
+        package: myapp
